@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ne">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>नेपाल कानून पत्रिका (NKP) - अदालत निर्णय खोज प्रणाली</title>
+  <meta name="description" content="नेपाल कानून पत्रिका (NKP) का फैसला तथा निर्णयहरु खोज्ने तथा पढ्ने मोबाइल र अफलाइन वेब एप।" />
+  <meta name="theme-color" content="#0f172a" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Mukta:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css?v=8" />
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="logo-group">
+        <div class="logo-badge">⚖️</div>
+        <div>
+          <h1>नेपाल कानून पत्रिका (NKP)</h1>
+          <p class="subtitle">अदालत फैसला खोज प्रणाली (Full Offline)</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <span id="offlineBadge" class="badge badge-online">
+          <span class="dot"></span> <span id="offlineStatusText">Checking...</span>
+        </span>
+      </div>
+    </header>
+
+    <!-- Sync & Database Status Card -->
+    <section class="sync-card">
+      <div class="sync-card-info">
+        <div class="sync-title">
+          <span class="db-icon">💾</span>
+          <div>
+            <div class="sync-headline" id="syncHeadline">मोबाइल अफलाइन स्टोर</div>
+            <div class="sync-subtext" id="syncSubtext">अन्तिम सिंक: जाँचिदैछ...</div>
+          </div>
+        </div>
+      </div>
+      <button id="syncOfflineBtn" class="sync-action-btn" title="साइटबाट सबै डाटा मोबाइलमा डाउनलोड गरी अफलाइन सुरक्षित गर्नुहोस्">
+        <span id="syncIcon">🔄</span> <span id="syncBtnLabel">सर्भरसँग सिंक गर्नुहोस्</span>
+      </button>
+    </section>
+
+    <!-- Search & Categorization Navigation Section -->
+    <section class="search-section">
+      <div class="search-box-wrapper">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input type="text" id="searchInput" placeholder="फैसला, निर्णय नं., मुद्दा वा शब्द खोज्नुहोस्..." autocomplete="off" />
+        <button id="clearSearchBtn" class="clear-btn" style="display:none;">✕</button>
+      </div>
+
+      <!-- Tier 1: Mudda Type / Legal Categories -->
+      <div class="nav-group-label">📁 मुद्दाको किसिम (Category Navigation)</div>
+      <div class="filter-pills" id="categoryPills">
+        <button class="pill pill-cat active" data-category="">सबै वर्ग</button>
+        <button class="pill pill-cat" data-category="फौजदारी">फौजदारी</button>
+        <button class="pill pill-cat" data-category="देवानी">देवानी</button>
+        <button class="pill pill-cat" data-category="रिट">रिट</button>
+        <button class="pill pill-cat" data-category="निवेदन">निवेदन</button>
+        <button class="pill pill-cat" data-category="सरकारवादी फौजदारी">सरकारवादी फौजदारी</button>
+        <button class="pill pill-cat" data-category="दुनियावादी फौजदारी">दुनियावादी फौजदारी</button>
+        <button class="pill pill-cat" data-category="दुनियाबादी देवानी">दुनियाबादी देवानी</button>
+        <button class="pill pill-cat" data-category="सरकारबादी देवानी">सरकारबादी देवानी</button>
+        <button class="pill pill-cat" data-category="विविध">विविध</button>
+      </div>
+
+      <!-- Tier 2: Specific Legal Topics -->
+      <div class="nav-group-label">⚖️ प्रमुख मुद्दा विषयहरु (Legal Topics)</div>
+      <div class="filter-pills" id="topicPills">
+        <button class="pill pill-topic active" data-topic="">सबै विषय</button>
+        <button class="pill pill-topic" data-topic="कर्तव्य ज्यान">कर्तव्य ज्यान</button>
+        <button class="pill pill-topic" data-topic="सवारी ज्यान">सवारी ज्यान</button>
+        <button class="pill pill-topic" data-topic="सवारी अङ्गभङ्ग">सवारी अङ्गभङ्ग</button>
+        <button class="pill pill-topic" data-topic="लागु औषध">लागु औषध</button>
+        <button class="pill pill-topic" data-topic="जबरजस्ती करणी">जबरजस्ती करणी</button>
+        <button class="pill pill-topic" data-topic="भ्रष्टाचार">भ्रष्टाचार</button>
+        <button class="pill pill-topic" data-topic="उत्प्रेषण">उत्प्रेषण</button>
+        <button class="pill pill-topic" data-topic="परमादेश">परमादेश</button>
+        <button class="pill pill-topic" data-topic="निषेधाज्ञा">निषेधाज्ञा</button>
+        <button class="pill pill-topic" data-topic="बन्दी प्रत्यक्षीकरण">बन्दी प्रत्यक्षीकरण</button>
+        <button class="pill pill-topic" data-topic="अंश">अंश</button>
+        <button class="pill pill-topic" data-topic="अंश चलन">अंश चलन</button>
+        <button class="pill pill-topic" data-topic="अंश जालसाजी">अंश जालसाजी</button>
+        <button class="pill pill-topic" data-topic="अंश नामसारी">अंश नामसारी</button>
+        <button class="pill pill-topic" data-topic="अंशबन्डा">अंशबन्डा</button>
+        <button class="pill pill-topic" data-topic="निज अर्जन">💰 निज अर्जन</button>
+        <button class="pill pill-topic" data-topic="सगोल">👨‍👩‍👧‍👦 सगोल</button>
+      </div>
+
+      <!-- Tier 3: Court Benches -->
+      <div class="nav-group-label">🏛️ इजलास / अदालत (Court Bench)</div>
+      <div class="filter-pills" id="courtPills">
+        <button class="pill pill-court active" data-court="">सबै इजलास</button>
+        <button class="pill pill-court" data-court="सर्वोच्च अदालत">सर्वोच्च अदालत</button>
+        <button class="pill pill-court" data-court="संयुक्त इजलास">संयुक्त इजलास</button>
+        <button class="pill pill-court" data-court="पूर्ण इजलास">पूर्ण इजलास</button>
+        <button class="pill pill-court" data-court="एकल इजलास">एकल इजलास</button>
+      </div>
+    </section>
+
+    <!-- Stats & Result Count -->
+    <section class="results-header">
+      <div id="resultsCount" class="results-count">नतिजाहरु खोज्दै...</div>
+      <div id="dataSourceBadge" class="data-source-badge">डेटा स्रोत: ...</div>
+    </section>
+
+    <!-- Main Judgment List -->
+    <main class="judgments-list" id="judgmentsList">
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>निर्णयहरु लोड हुँदैछन्...</p>
+      </div>
+    </main>
+
+    <!-- Pagination -->
+    <div class="pagination" id="pagination"></div>
+  </div>
+
+  <!-- Detail Reader Modal -->
+  <div class="modal-backdrop" id="detailModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <span class="decision-badge" id="modalDecisionNo">निर्णय नं. ---</span>
+          <h2 id="modalCaseName">फैसला विवरण</h2>
+        </div>
+        <div class="modal-controls">
+          <button id="fontDecrease" class="tool-btn" title="अक्षर सानो पार्नुहोस्">A-</button>
+          <button id="fontIncrease" class="tool-btn" title="अक्षर ठूलो पार्नुहोस्">A+</button>
+          <button id="copyTextBtn" class="tool-btn" title="पाठ प्रतिलिपि गर्नुहोस्">📋</button>
+          <button id="closeModalBtn" class="close-btn">✕</button>
+        </div>
+      </div>
+
+      <div class="modal-body" id="modalBody">
+        <div class="meta-grid" id="modalMetaGrid"></div>
+        <hr class="divider" />
+        <div class="judgment-text" id="modalText"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js?v=8"></script>
+</body>
+</html>

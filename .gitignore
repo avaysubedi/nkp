@@ -1,0 +1,14 @@
+**/bin/
+**/obj/
+**/*.user
+*.db
+*.db-shm
+*.db-wal
+nkp-detail*.html
+nkp-search.html
+scrape-*/
+packages/
+.vs/
+.vscode/
+.idea/
+*.log

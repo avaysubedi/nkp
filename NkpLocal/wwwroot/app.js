@@ -6,6 +6,14 @@ let currentCategory = '';
 let currentTopic = '';
 let currentFontSize = 1.05;
 let dbInstance = null;
+const APP_VERSION = '1.1.0';
+const HIGH_LEVEL_MUDDA = {
+  'फौजदारी': ['सरकारवादी फौजदारी', 'दुनियावादी फौजदारी', 'दुनियाबादी फौजदारी'],
+  'देवानी': ['दुनियाबादी देवानी', 'दुनियावादी देवानी', 'सरकारबादी देवानी', 'सरकारवादी देवानी'],
+  'रिट': ['रिट'],
+  'निवेदन': ['निवेदन'],
+  'विविध': ['विविध']
+};
 
 // DOM Elements
 const searchInput = document.getElementById('searchInput');
@@ -130,49 +138,103 @@ async function getLocalJudgmentById(id) {
   });
 }
 
+function normalizeLabel(value) {
+  return (value || '').trim().replace(/\s+/g, ' ');
+}
+
+function matchesCategory(item, selected) {
+  const wanted = normalizeLabel(selected);
+  if (!wanted) return true;
+  const mudda = normalizeLabel(item.muddaType);
+  const cat = normalizeLabel(item.category);
+  if (mudda === wanted || cat === wanted) return true;
+  const children = HIGH_LEVEL_MUDDA[wanted];
+  return !!(children && children.includes(mudda));
+}
+
+function matchesTopic(item, selected) {
+  const top = normalizeLabel(selected).toLowerCase();
+  if (!top) return true;
+  const tokens = (item.topics || '')
+    .split('|')
+    .map(s => s.trim().toLowerCase())
+    .filter(Boolean);
+  const aliases = top === 'बन्दी प्रत्यक्षीकरण' ? ['बन्दीप्रत्यक्षीकरण']
+    : top === 'बन्दीप्रत्यक्षीकरण' ? ['बन्दी प्रत्यक्षीकरण']
+    : [];
+  if (tokens.includes(top) || aliases.some(a => tokens.includes(a))) return true;
+  const caseName = (item.caseName || '').toLowerCase();
+  const longer = ['अंश चलन', 'अंश जालसाजी', 'अंश नामसारी', 'अंशबन्डा', 'उत्प्रेषण / परमादेश']
+    .map(s => s.toLowerCase())
+    .filter(s => s !== top && s.includes(top));
+  return caseName.includes(top) && !longer.some(s => caseName.includes(s));
+}
+
+function matchesCourt(item, selected) {
+  const wanted = normalizeLabel(selected).toLowerCase();
+  if (!wanted) return true;
+  return (item.court || '').toLowerCase().includes(wanted);
+}
+
+function pillBaseLabel(btn) {
+  if (!btn.dataset.label) {
+    btn.dataset.label = btn.textContent.replace(/\s*\(\d+\)\s*$/, '').trim();
+  }
+  return btn.dataset.label;
+}
+
+function setPillCount(btn, count, hideIfEmpty) {
+  const label = pillBaseLabel(btn);
+  btn.textContent = `${label} (${count})`;
+  const selected = btn.getAttribute('data-category') ?? btn.getAttribute('data-topic') ?? btn.getAttribute('data-court') ?? '';
+  btn.hidden = !!(hideIfEmpty && selected && count === 0);
+}
+
+async function refreshFilterPills() {
+  const all = await getAllLocalJudgments();
+
+  document.querySelectorAll('.pill-cat').forEach(btn => {
+    const cat = btn.getAttribute('data-category') || '';
+    setPillCount(btn, all.filter(item => matchesCategory(item, cat)).length, true);
+  });
+
+  const inCategory = all.filter(item => matchesCategory(item, currentCategory));
+  document.querySelectorAll('.pill-topic').forEach(btn => {
+    const topic = btn.getAttribute('data-topic') || '';
+    setPillCount(btn, inCategory.filter(item => matchesTopic(item, topic)).length, true);
+  });
+
+  const activeTopic = document.querySelector('.pill-topic.active');
+  if (activeTopic && activeTopic.hidden) {
+    document.querySelectorAll('.pill-topic').forEach(p => p.classList.remove('active'));
+    const allTopic = document.querySelector('.pill-topic[data-topic=""]');
+    if (allTopic) allTopic.classList.add('active');
+    currentTopic = '';
+  }
+
+  const inCatTopic = inCategory.filter(item => matchesTopic(item, currentTopic));
+  document.querySelectorAll('.pill-court').forEach(btn => {
+    const court = btn.getAttribute('data-court') || '';
+    setPillCount(btn, inCatTopic.filter(item => matchesCourt(item, court)).length, true);
+  });
+
+  const activeCourt = document.querySelector('.pill-court.active');
+  if (activeCourt && activeCourt.hidden) {
+    document.querySelectorAll('.pill-court').forEach(p => p.classList.remove('active'));
+    const allCourt = document.querySelector('.pill-court[data-court=""]');
+    if (allCourt) allCourt.classList.add('active');
+    currentCourt = '';
+  }
+}
+
 async function searchLocalJudgments(query, court, category, topic, page = 1, pageSize = 15) {
   const allItems = await getAllLocalJudgments();
   const q = (query || '').trim().toLowerCase();
-  const c = (court || '').trim().toLowerCase();
-  const cat = (category || '').trim().toLowerCase();
-  const top = (topic || '').trim().toLowerCase();
 
   let filtered = allItems.filter(item => {
-    // Court filter
-    if (c && !(item.court || '').toLowerCase().includes(c)) {
-      return false;
-    }
-    if (cat) {
-      const storedCat = (item.category || '').trim().toLowerCase();
-      const storedMudda = (item.muddaType || '').trim().toLowerCase();
-      if (storedMudda === cat || storedCat === cat) {
-        // official NKP type or high-level bucket
-      } else if (!storedMudda && !storedCat) {
-        const catHaystack = [item.caseName, item.caseNumber, item.summary].filter(Boolean).join(' ').toLowerCase();
-        if (!catHaystack.includes(cat)) return false;
-      } else {
-        return false;
-      }
-    }
-    if (top) {
-      const tokens = (item.topics || '')
-        .split('|')
-        .map(s => s.trim().toLowerCase())
-        .filter(Boolean);
-      const aliases = top === 'बन्दी प्रत्यक्षीकरण' ? ['बन्दीप्रत्यक्षीकरण']
-        : top === 'बन्दीप्रत्यक्षीकरण' ? ['बन्दी प्रत्यक्षीकरण']
-        : [];
-      const hasToken = tokens.includes(top) || aliases.some(a => tokens.includes(a));
-      const caseName = (item.caseName || '').toLowerCase();
-      const longer = ['अंश चलन', 'अंश जालसाजी', 'अंश नामसारी', 'अंशबन्डा', 'उत्प्रेषण / परमादेश']
-        .map(s => s.toLowerCase())
-        .filter(s => s !== top && s.includes(top));
-      const nameHit = caseName.includes(top) && !longer.some(s => caseName.includes(s));
-      if (!hasToken && !nameHit) {
-        return false;
-      }
-    }
-    // Search query filter
+    if (!matchesCourt(item, court)) return false;
+    if (!matchesCategory(item, category)) return false;
+    if (!matchesTopic(item, topic)) return false;
     if (q) {
       const haystack = [
         item.caseName,
@@ -182,9 +244,11 @@ async function searchLocalJudgments(query, court, category, topic, page = 1, pag
         item.laws,
         item.precedents,
         item.summary,
-        item.fullText
+        item.fullText,
+        item.muddaType,
+        item.category,
+        item.topics
       ].filter(Boolean).join(' ').toLowerCase();
-
       return haystack.includes(q);
     }
     return true;
@@ -236,6 +300,7 @@ async function bootApp() {
   if (appBooted) return;
   appBooted = true;
   setupEventListeners();
+  renderFooter(null);
   await updateSyncStatusUI();
   await syncWithServerSilently();
   await fetchJudgments();
@@ -310,8 +375,41 @@ async function fetchManifest() {
   return res.json();
 }
 
+function formatStamp(iso) {
+  if (!iso) return '—';
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return iso;
+  return date.toLocaleString('en-GB', {
+    timeZone: 'Asia/Kathmandu',
+    year: 'numeric',
+    month: 'short',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true
+  }) + ' NPT';
+}
+
+function renderFooter(manifest) {
+  const versionEl = document.getElementById('footerVersion');
+  const updatedEl = document.getElementById('footerUpdated');
+  const builtEl = document.getElementById('footerBuilt');
+  const version = (manifest && (manifest.appVersion || manifest.AppVersion)) || APP_VERSION;
+  const generatedAt = manifest && (manifest.generatedAt || manifest.GeneratedAt);
+  const total = manifest && (manifest.total ?? manifest.Total);
+  if (versionEl) versionEl.textContent = `NKP v${version}`;
+  if (updatedEl) {
+    const countPart = total != null ? ` · ${total} निर्णय` : '';
+    updatedEl.textContent = `डाटा अपडेट: ${formatStamp(generatedAt)}${countPart}`;
+  }
+  if (builtEl) {
+    builtEl.textContent = `साइट बिल्ड / GitHub अपडेट: ${formatStamp(generatedAt)}`;
+  }
+}
+
 async function pullAllFromServer(onProgress) {
   const manifest = await fetchManifest();
+  renderFooter(manifest);
   const totalPages = manifest.totalPages ?? manifest.TotalPages ?? 0;
   const total = manifest.total ?? manifest.Total ?? 0;
   if (!totalPages || total === 0) return 0;
@@ -446,6 +544,8 @@ async function fetchJudgments() {
     </div>
   `;
 
+  await refreshFilterPills();
+
   const localCount = await getLocalJudgmentsCount();
   setConnectionState(navigator.onLine);
   dataSourceBadge.textContent = localCount > 0
@@ -461,6 +561,7 @@ async function syncWithServerSilently() {
   try {
     const localCount = await getLocalJudgmentsCount();
     const manifest = await fetchManifest();
+    renderFooter(manifest);
     const remoteTotal = manifest.total ?? manifest.Total ?? 0;
     const remoteGen = manifest.generatedAt || manifest.GeneratedAt || '';
     const lastGen = localStorage.getItem('nkp_data_generated_at');

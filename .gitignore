@@ -12,3 +12,5 @@ packages/
 .vscode/
 .idea/
 *.log
+_inspect_*.py
+_inspect_*.txt

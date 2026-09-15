@@ -735,11 +735,21 @@ public class DatabaseHelper
 
         if (!string.IsNullOrWhiteSpace(category))
         {
-            whereClauses.Add("(Category = $category OR MuddaType = $category OR (IFNULL(Category, '') = '' AND IFNULL(MuddaType, '') = '' AND (CaseName LIKE $categoryLike OR Summary LIKE $categoryLike)))");
-            countCmd.Parameters.AddWithValue("$category", category.Trim());
-            countCmd.Parameters.AddWithValue("$categoryLike", $"%{category.Trim()}%");
-            searchCmd.Parameters.AddWithValue("$category", category.Trim());
-            searchCmd.Parameters.AddWithValue("$categoryLike", $"%{category.Trim()}%");
+            var cat = category.Trim();
+            if (cat == "फौजदारी")
+            {
+                whereClauses.Add("(Category = $category OR MuddaType IN ('सरकारवादी फौजदारी','दुनियावादी फौजदारी','दुनियाबादी फौजदारी'))");
+            }
+            else if (cat == "देवानी")
+            {
+                whereClauses.Add("(Category = $category OR MuddaType IN ('दुनियाबादी देवानी','दुनियावादी देवानी','सरकारबादी देवानी','सरकारवादी देवानी'))");
+            }
+            else
+            {
+                whereClauses.Add("(MuddaType = $category OR Category = $category)");
+            }
+            countCmd.Parameters.AddWithValue("$category", cat);
+            searchCmd.Parameters.AddWithValue("$category", cat);
         }
 
         if (!string.IsNullOrWhiteSpace(topic))

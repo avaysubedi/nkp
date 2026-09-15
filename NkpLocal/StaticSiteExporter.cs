@@ -58,6 +58,7 @@ static class StaticSiteExporter
         var manifest = new
         {
             GeneratedAt = generatedAt,
+            AppVersion = AppInfo.Version,
             Total = total,
             PageSize = PageSize,
             TotalPages = totalPages,
